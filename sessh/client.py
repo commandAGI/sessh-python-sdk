@@ -118,3 +118,23 @@ class SesshClient:
         # For attach, we want interactive mode, so use subprocess.run without capture_output
         subprocess.run(sessh_args, env=env, check=False)
 
+    def keys(self, key_sequence: str) -> Dict[str, Any]:
+        """
+        Send individual key events to the tmux session (no Enter key).
+        Useful for interactive TUI programs like vim or nano.
+
+        Args:
+            key_sequence: Key sequence to send (e.g., 'j', 'k', 'C-x', 'Esc', etc.)
+        """
+        return self._run_sessh("keys", "--", key_sequence)
+
+    def pane(self, lines: int = 300) -> Dict[str, Any]:
+        """
+        Read the current pane state from the tmux session.
+        Useful for reading the current state of interactive TUI programs.
+
+        Args:
+            lines: Number of lines to capture (default: 300)
+        """
+        return self._run_sessh("pane", str(lines))
+

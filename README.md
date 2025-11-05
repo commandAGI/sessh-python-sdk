@@ -85,6 +85,12 @@ Kill tmux session and close the controlmaster.
 #### `attach() -> None`
 Attach to the tmux session interactively. Note: This will block and take over the terminal.
 
+#### `keys(key_sequence: str) -> Dict[str, Any]`
+Send individual key events to the tmux session (no Enter key). Useful for interactive TUI programs like vim or nano.
+
+#### `pane(lines: int = 300) -> Dict[str, Any]`
+Read the current pane state from the tmux session. Useful for reading the current state of interactive TUI programs.
+
 ## Development
 
 ```bash
@@ -147,6 +153,35 @@ client.run("pip install torch torchvision")
 client.run("python train.py")
 logs = client.logs(400)
 print(logs["output"])
+client.close()
+```
+
+#### Interactive TUI Programs
+
+```python
+from sessh import SesshClient
+
+client = SesshClient(alias="editor", host="ubuntu@host")
+client.open()
+
+# Launch vim
+client.run("vim file.txt")
+
+# Read current pane to see vim's state
+pane = client.pane(30)
+print(pane["output"])
+
+# Send key sequences to navigate and edit
+client.keys("i")        # Enter insert mode
+client.keys("Hello")    # Type text
+client.keys("Esc")      # Exit insert mode
+client.keys(":wq")      # Save and quit
+client.keys("Enter")    # Confirm
+
+# Read pane again to verify
+pane = client.pane(30)
+print(pane["output"])
+
 client.close()
 ```
 
