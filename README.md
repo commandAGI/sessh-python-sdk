@@ -95,6 +95,102 @@ pip install -e ".[dev]"
 pytest
 ```
 
+## Examples
+
+### Lambda Labs GPU Training
+
+```python
+import subprocess
+import json
+import time
+from sessh import SesshClient
+
+# Launch Lambda Labs instance (example)
+# ... API calls to get IP ...
+
+ip = "203.0.113.10"
+client = SesshClient(
+    alias="agent",
+    host=f"ubuntu@{ip}",
+    identity="~/.ssh/id_ed25519"
+)
+
+# Open session
+client.open()
+
+# Install dependencies
+client.run("pip install torch torchvision")
+
+# Train model
+client.run("python train.py")
+
+# Check logs
+logs = client.logs(400)
+print(logs["output"])
+
+# Close session
+client.close()
+```
+
+### Autonomous Workflow
+
+```python
+from sessh import SesshClient
+
+client = SesshClient(alias="builder", host="build@ci-host")
+
+try:
+    client.open()
+    
+    # Build
+    client.run("cd /repo && make build")
+    
+    # Test
+    client.run("make test")
+    
+    # Get results
+    logs = client.logs(1000)
+    print(logs["output"])
+    
+finally:
+    client.close()
+```
+
+### Error Handling
+
+```python
+from sessh import SesshClient
+import sys
+
+client = SesshClient(alias="test", host="ubuntu@host")
+
+try:
+    client.open()
+    client.run("some-command")
+except RuntimeError as e:
+    print(f"Error: {e}", file=sys.stderr)
+    sys.exit(1)
+```
+
+## Troubleshooting
+
+**"sessh: command not found"**
+- Ensure `sessh` CLI is installed and on PATH
+- Or set `sessh_bin` parameter: `SesshClient(..., sessh_bin="/usr/local/bin/sessh")`
+
+**RuntimeError on operations**
+- Check that `sessh` CLI works from command line
+- Verify SSH key permissions and configuration
+- Ensure remote host has tmux installed
+
+**JSON parsing errors**
+- The SDK automatically sets `SESSH_JSON=1`
+- Verify `sessh` CLI supports JSON output
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
+
 ## Related Projects
 
 - [sessh](https://github.com/CommandAGI/sessh) - Core CLI
