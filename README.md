@@ -97,63 +97,111 @@ pytest
 
 ## Examples
 
-### Lambda Labs GPU Training
+Comprehensive examples are available in the [`examples/`](examples/) directory. Each example demonstrates launching infrastructure, using sessh to manage persistent sessions, and cleaning up resources.
+
+### Quick Examples
+
+#### Local/Localhost
 
 ```python
-import subprocess
-import json
-import time
 from sessh import SesshClient
 
-# Launch Lambda Labs instance (example)
-# ... API calls to get IP ...
-
-ip = "203.0.113.10"
-client = SesshClient(
-    alias="agent",
-    host=f"ubuntu@{ip}",
-    identity="~/.ssh/id_ed25519"
-)
-
-# Open session
+client = SesshClient(alias="local-test", host="user@localhost")
 client.open()
-
-# Install dependencies
-client.run("pip install torch torchvision")
-
-# Train model
-client.run("python train.py")
-
-# Check logs
-logs = client.logs(400)
+client.run("echo 'Hello from sessh!'")
+logs = client.logs(50)
 print(logs["output"])
-
-# Close session
 client.close()
 ```
 
-### Autonomous Workflow
+#### AWS EC2
 
 ```python
+import os
 from sessh import SesshClient
 
-client = SesshClient(alias="builder", host="build@ci-host")
+# Launch EC2 instance, get IP (example)
+ip = "203.0.113.10"
+client = SesshClient(alias="aws-agent", host=f"ubuntu@{ip}")
+client.open()
+client.run("python train.py")
+logs = client.logs(400)
+client.close()
+```
 
-try:
-    client.open()
-    
-    # Build
-    client.run("cd /repo && make build")
-    
-    # Test
-    client.run("make test")
-    
-    # Get results
-    logs = client.logs(1000)
-    print(logs["output"])
-    
-finally:
-    client.close()
+#### Lambda Labs GPU
+
+```python
+import os
+from sessh import SesshClient
+
+# Launch Lambda Labs instance, get IP (example)
+ip = "203.0.113.10"
+client = SesshClient(
+    alias="lambda-agent",
+    host=f"ubuntu@{ip}",
+    identity="~/.ssh/id_ed25519"
+)
+client.open()
+client.run("pip install torch torchvision")
+client.run("python train.py")
+logs = client.logs(400)
+print(logs["output"])
+client.close()
+```
+
+### Available Examples
+
+All examples follow the same pattern:
+1. Launch infrastructure (instance/container)
+2. Wait for SSH to be ready
+3. Open sessh session
+4. Run commands (state persists between commands)
+5. Fetch logs
+6. Clean up resources
+
+**Example Files:**
+- [`examples/local.py`](examples/local.py) - Localhost/local VM
+- [`examples/docker.py`](examples/docker.py) - Docker container
+- [`examples/aws.py`](examples/aws.py) - AWS EC2
+- [`examples/gcp.py`](examples/gcp.py) - Google Cloud Platform
+- [`examples/lambdalabs.py`](examples/lambdalabs.py) - Lambda Labs GPU
+- [`examples/azure.py`](examples/azure.py) - Microsoft Azure
+- [`examples/digitalocean.py`](examples/digitalocean.py) - DigitalOcean
+- [`examples/docker_compose.py`](examples/docker_compose.py) - Docker Compose
+
+**Running Examples:**
+```bash
+# Local example
+python examples/local.py localhost
+
+# AWS example (requires AWS credentials)
+export AWS_REGION=us-east-1
+export AWS_KEY_NAME=my-key
+python examples/aws.py
+
+# Lambda Labs example (requires API key)
+export LAMBDA_API_KEY=sk_live_...
+export LAMBDA_SSH_KEY=my-ssh-key
+python examples/lambdalabs.py
+```
+
+### Integration Tests
+
+Integration tests are available in [`tests/test_examples.py`](tests/test_examples.py). These tests require real infrastructure and are skipped by default.
+
+**Running Integration Tests:**
+```bash
+# Enable integration tests
+export SESSH_INTEGRATION_TESTS=1
+
+# For local tests
+export SESSH_TEST_HOST=localhost
+pytest tests/test_examples.py::TestLocalExample
+
+# For cloud provider tests (requires credentials)
+export AWS_REGION=us-east-1
+pytest tests/test_examples.py::TestAWSExample
 ```
 
 ### Error Handling
@@ -170,6 +218,8 @@ try:
 except RuntimeError as e:
     print(f"Error: {e}", file=sys.stderr)
     sys.exit(1)
+finally:
+    client.close()
 ```
 
 ## Troubleshooting
